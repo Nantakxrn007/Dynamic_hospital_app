@@ -87,7 +87,7 @@ def map_view(request):
     fig.add_trace(go.Scattermapbox(
         lat=[], lon=[],
         mode="lines",
-        line=dict(color="cyan", width=4),
+        line=dict(color="black", width=2),
         name="highlight"
     ))
 
@@ -108,7 +108,18 @@ def map_view(request):
         boundaries[row["province_name_th"]] = coords
 
 
+
+    province_data = {}
+    for _, row in gdf.iterrows():
+        province_data[row["province_name_th"]] = {
+            "AdequacyIndex": round(row["AdequacyIndex"], 3),
+            "staff_score": int(row["staff_score"]),
+            "equipment_score": int(row["equipment_score"]),
+            "elderly_population": int(row["elderly_population"]),
+        }
+
     return render(request, "dashboard/map.html", {
         "graph": fig.to_html(full_html=False),
-        "boundaries": json.dumps(boundaries)
+        "boundaries": json.dumps(boundaries),
+        "province_data": json.dumps(province_data)
     })

@@ -4,38 +4,103 @@
   <meta charset="UTF-8">
   <title>🏥 Adequacy Index Map</title>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    h2 { text-align: center; margin: 10px 0; }
+    #info-box {
+      width: 80%;
+      margin: 20px auto;
+      padding: 15px;
+      border-radius: 10px;
+      background-color: #f5f5f5;
+      display: none; /* 🔥 ซ่อนไว้ก่อน */
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    #province-name { font-size: 20px; font-weight: bold; color: #007BFF; }
+  </style>
 </head>
 <body>
   <h2>🏥 Hospital Adequacy Index Map</h2>
+  <!-- 🔘 ปุ่ม Reset -->
+<div style="text-align:center; margin-bottom:10px;">
+  <button id="reset-btn"
+          style="background-color:#007BFF; color:white; padding:8px 14px; border:none; border-radius:6px; cursor:pointer;">
+    🔄 Reset Map
+  </button>
+</div>
   <div id="map-container">{{ graph|safe }}</div>
 
-  <script>
-  const boundaries = {{ boundaries|safe }};
-  const plotDiv = document.querySelector('#map-container').querySelector('div.js-plotly-plot');
+  <!-- 🔽 กล่องข้อมูลจังหวัด -->
+  <div id="info-box">
+    <div id="province-name"></div>
+    <div id="province-details"></div>
+  </div>
 
-  plotDiv.on('plotly_hover', function(data) {
-    const province = data.points[0].location;
-    const coords = boundaries[province];
-    if (!coords) return;
+    <script>
+    const boundaries = {{ boundaries|safe }};
+    const provinceData = {{ province_data|safe }};
+    const plotDiv = document.querySelector('#map-container').querySelector('div.js-plotly-plot');
+    const infoBox = document.getElementById('info-box');
+    const provinceName = document.getElementById('province-name');
+    const provinceDetails = document.getElementById('province-details');
+    const resetBtn = document.getElementById('reset-btn');
 
-    const lats = coords.map(c => c ? c[1] : null);
-    const lons = coords.map(c => c ? c[0] : null);
+    // highlight ขอบจังหวัดเมื่อ hover
+    plotDiv.on('plotly_hover', function(data) {
+      const province = data.points[0].location;
+      const coords = boundaries[province];
+      if (!coords) return;
 
-    // update scatter layer (trace index 1)
-    Plotly.restyle(plotDiv, {
-      lat: [lats],
-      lon: [lons],
-      'hoverinfo': 'skip',  // 🔥 ปิด tooltip พิกัด
-      'mode': 'lines',
-      'line.color': 'cyan',
-      'line.width': 4
-    }, [1]);
-  });
+      const lats = coords.map(c => c ? c[1] : null);
+      const lons = coords.map(c => c ? c[0] : null);
 
-  plotDiv.on('plotly_unhover', function() {
-    Plotly.restyle(plotDiv, { lat: [[]], lon: [[]] }, [1]);
-  });
-</script>
+      Plotly.restyle(plotDiv, {
+        lat: [lats],
+        lon: [lons],
+        hoverinfo: 'skip',
+        mode: 'lines',
+        'line.color': 'black',
+        'line.width': 4
+      }, [1]);
+    });
 
+    plotDiv.on('plotly_unhover', function() {
+      Plotly.restyle(plotDiv, { lat: [[]], lon: [[]] }, [1]);
+    });
+
+    // 🖱️ เมื่อคลิกจังหวัด → แสดงข้อมูลด้านล่าง
+    plotDiv.on('plotly_click', function(data) {
+      const province = data.points[0].location;
+      const info = provinceData[province];
+      if (!info) return;
+
+      // แสดงข้อมูลจังหวัด
+      provinceName.textContent = "📍 จังหวัด " + province;
+      provinceDetails.innerHTML = `
+          <p>💡 Adequacy Index: <b>${info.AdequacyIndex}</b></p>
+          <p>👨‍⚕️ Staff Score: ${info.staff_score.toLocaleString()}</p>
+          <p>🏥 Equipment Score: ${info.equipment_score.toLocaleString()}</p>
+          <p>👵 Elderly Population: ${info.elderly_population.toLocaleString()}</p>
+      `;
+      infoBox.style.display = "block";
+
+      // เบลอจังหวัดอื่น
+      const allLocations = Object.keys(provinceData);
+      const opacities = allLocations.map(p => (p === province ? 1.0 : 0.2));
+      Plotly.restyle(plotDiv, { 'marker.opacity': [opacities] }, [0]);
+    });
+
+    // 🔄 ปุ่ม Reset
+    resetBtn.addEventListener('click', function() {
+      const allLocations = Object.keys(provinceData);
+      const opacities = allLocations.map(() => 1.0);
+
+      // คืนค่า opacity ของทุกจังหวัด
+      Plotly.restyle(plotDiv, { 'marker.opacity': [opacities] }, [0]);
+
+      // ซ่อนกล่องข้อมูล
+      infoBox.style.display = "none";
+    });
+  </script>
 </body>
 </html>
