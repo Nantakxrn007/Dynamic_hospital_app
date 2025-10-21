@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🏥 Adequacy Index Map</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+  <h2>🏥 Hospital Adequacy Index Map</h2>
+  <div id="map-container">{{ graph|safe }}</div>
+
+  <script>
+  const boundaries = {{ boundaries|safe }};
+  const plotDiv = document.querySelector('#map-container').querySelector('div.js-plotly-plot');
+
+  plotDiv.on('plotly_hover', function(data) {
+    const province = data.points[0].location;
+    const coords = boundaries[province];
+    if (!coords) return;
+
+    const lats = coords.map(c => c ? c[1] : null);
+    const lons = coords.map(c => c ? c[0] : null);
+
+    // update scatter layer (trace index 1)
+    Plotly.restyle(plotDiv, {
+      lat: [lats],
+      lon: [lons],
+      'hoverinfo': 'skip',  // 🔥 ปิด tooltip พิกัด
+      'mode': 'lines',
+      'line.color': 'cyan',
+      'line.width': 4
+    }, [1]);
+  });
+
+  plotDiv.on('plotly_unhover', function() {
+    Plotly.restyle(plotDiv, { lat: [[]], lon: [[]] }, [1]);
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,36 @@
+version: '3.9'
+
+services:
+  django_app:
+    build: .
+    container_name: hospital_django_app
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - hospital_db
+    environment:
+      - DATABASE_NAME=hospital_db
+      - DATABASE_USER=hospital_user
+      - DATABASE_PASSWORD=hospital_pass
+      - DATABASE_HOST=hospital_db
+      - DATABASE_PORT=5432
+    restart: always
+
+  hospital_db:
+    image: postgis/postgis:15-3.3
+    container_name: hospital_db
+    environment:
+      POSTGRES_DB: hospital_db
+      POSTGRES_USER: hospital_user
+      POSTGRES_PASSWORD: hospital_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  pg_data:

@@ -1,0 +1,16 @@
+Django==5.2.7
+pandas
+sqlalchemy
+psycopg2-binary
+geopandas
+plotly
+scikit-learn
+openpyxl
+numpy
+shapely
+pyproj
+fiona
+zipfile36
+geoalchemy2
+matplotlib
+seaborn
