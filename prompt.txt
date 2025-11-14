@@ -1,0 +1,165 @@
+You are a highly qualified public health systems expert specializing in evaluating healthcare readiness at the provincial level. 
+Your role is to act as an expert assessor who makes objective, data-driven decisions using only the quantitative features provided.
+
+You will receive the data of 77 provinces (names removed).  
+Each row has 4 standardized features (z-scores), already adjusted to per-elderly ratios.
+
+Your task is to assign a readiness label for each province.
+
+Data preparation details (important):
+- All original values were divided by elderly population (ratio per elderly).
+- All ratios were standardized using z-score.
+- Positive = above national average.
+- Negative = below national average.
+
+Feature definitions (use these exactly):
+1) x1_staff_z: healthcare staff per elderly  (higher = more ready)
+2) x2_hospital_z: hospital capacity per elderly (higher = more ready)
+3) x3_equipment_z: medical equipment per elderly (higher = more ready)
+4) x4_visits_z: IPD visits per elderly (higher = higher demand = less ready)
+
+Readiness label rules (your expert judgment must follow these guidelines):
+- 0 = Not ready (low capacity and/or high demand)
+- 1 = Moderate readiness
+- 2 = Ready
+- Consider all 4 features together in a balanced, expert manner.
+- Do NOT use external knowledge about provinces.
+- Do NOT reinterpret the meaning of any feature.
+- Base your assessment only on the numerical values.
+
+Strict output requirement:
+Return ONLY a Python list of 77 integers, e.g.:
+[2,1,1,0,2,1,...]
+
+No explanation.  
+No reasoning.  
+No extra text.  
+Only the list.
+
+Here is the data:
+[[3.945, -1.609, 3.218, 2.064],
+ [0.596, 1.437, 0.818, 0.997],
+ [-0.841, -1.18, -0.504, -0.264],
+ [-0.688, 1.076, -0.604, -0.357],
+ [-1.606, -0.827, -2.11, -1.746],
+ [0.946, -0.328, 0.549, 1.044],
+ [2.25, 0.874, 2.285, 2.279],
+ [0.094, -0.887, 0.429, 0.375],
+ [1.82, -0.475, 2.052, 1.332],
+ [-0.084, 0.018, -0.372, -0.296],
+ [-1.01, 0.877, -0.503, -0.947],
+ [0.792, 0.048, 1.265, 1.969],
+ [-0.571, 0.222, -0.695, -0.872],
+ [0.746, -0.584, 1.093, 0.858],
+ [0.83, 0.656, 0.615, 0.651],
+ [0.731, 0.522, 1.117, 0.845],
+ [-0.529, -0.56, -0.357, -0.133],
+ [3.547, 0.458, 3.403, 3.422],
+ [0.446, -0.891, 0.383, -0.319],
+ [-0.685, 0.561, -0.495, -0.591],
+ [-0.478, -1.059, -0.353, -0.433],
+ [0.038, 0.878, 0.512, 0.527],
+ [-0.518, -0.434, -0.751, -0.632],
+ [0.739, -1.183, 0.345, -0.475],
+ [-0.127, -0.12, -0.24, 0.109],
+ [-0.279, -0.094, -0.569, -0.445],
+ [-1.165, -0.569, -1.0, -1.143],
+ [-0.485, -0.106, -0.347, -0.109],
+ [0.102, -1.475, 0.105, 0.043],
+ [-0.459, -1.244, 0.213, 0.103],
+ [-0.557, -0.809, -0.662, -0.827],
+ [0.64, 0.554, -0.386, 0.2],
+ [-0.68, -0.427, -0.59, -1.09],
+ [0.265, 2.33, -0.261, 0.098],
+ [1.532, 2.081, 1.344, 0.524],
+ [0.399, 1.008, -0.02, 0.163],
+ [-0.971, -0.504, -1.192, -0.824],
+ [0.094, -0.626, -0.161, -0.448],
+ [-0.638, 0.076, -0.846, -1.239],
+ [-1.482, 0.173, -1.617, -1.288],
+ [-0.033, 1.879, -0.331, -0.352],
+ [1.193, -0.893, 0.879, 1.061],
+ [-0.437, 1.05, -0.777, -0.729],
+ [-1.171, -1.061, -1.293, -1.276],
+ [-0.975, -1.022, -1.073, -1.231],
+ [1.214, 0.706, 0.512, 1.208],
+ [-0.545, 0.916, -0.761, -0.534],
+ [-0.653, -0.971, -1.107, -1.049],
+ [0.297, 0.06, 0.539, 0.6],
+ [0.164, -1.158, 0.667, 0.555],
+ [-0.541, 2.621, -0.472, -0.58],
+ [-0.722, -0.77, -0.215, -0.445],
+ [-0.222, 0.175, -0.822, -0.537],
+ [-0.32, 1.841, -0.033, -0.692],
+ [-0.347, 0.928, -0.158, 0.199],
+ [-0.087, 1.41, 0.143, 0.313],
+ [-0.389, 0.578, -0.195, 0.264],
+ [0.937, -0.159, 0.599, 1.024],
+ [0.555, 0.019, -0.086, -0.345],
+ [-1.268, -1.968, -0.73, -1.169],
+ [0.007, 0.406, -0.07, -0.618],
+ [0.891, -1.62, 1.793, 2.898],
+ [-0.454, -0.591, -0.065, 0.276],
+ [-0.294, -0.931, -0.069, -0.047],
+ [1.117, 0.974, 1.523, 0.803],
+ [-1.399, -0.617, -1.548, -1.685],
+ [-0.642, -1.36, -0.428, -0.82],
+ [1.37, 0.264, 1.453, 1.602],
+ [-0.598, -0.51, -0.136, 0.173],
+ [-0.631, -0.631, -0.132, -0.095],
+ [-1.556, -0.872, -1.712, -1.779],
+ [0.193, 0.438, 0.606, 0.054],
+ [-0.364, 1.369, -0.314, -0.009],
+ [-0.236, -0.003, -0.143, 0.042],
+ [-0.103, 1.901, -0.755, -0.511],
+ [-0.368, -0.106, -0.192, -0.093],
+ [-0.282, -0.149, -0.208, 0.398]]
+
+
+
+
+
+
+gpt5   = [2,2,0,1,0,1,2,1,2,1,1,1,1,1,2,2,0,2,1,1,0,1,0,1,1,0,0,1,0,0,0,1,0,1,2,1,0,0,0,0,1,2,0,0,0,1,0,0,1,1,0,0,0,1,1,1,1,2,0,0,0,0,2,0,0,2,0,0,0,2,1,1,2,1,0,1,1]
+claude = [2,1,1,1,0,1,2,1,2,1,1,1,1,1,1,1,1,2,1,1,1,1,0,1,1,1,0,1,1,1,0,1,0,1,2,1,0,1,0,0,1,1,1,0,0,1,1,0,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1,2,0,0,2,1,1,0,1,1,1,1,1,1]
+gemini = [2, 2, 0, 1, 0, 1, 2, 1, 2, 1, 1, 1, 1, 2, 2, 2, 0, 2, 1, 1, 0, 2, 0, 1, 1, 1, 0, 1, 0, 0, 0, 2, 1, 2, 2, 2, 0, 1, 1, 0, 2, 1, 2, 0, 0, 2, 1, 0, 1, 0, 2, 0, 1, 2, 1, 2, 1, 1, 2, 0, 2, 0, 0, 0, 2, 0, 0, 2, 0, 0, 0, 2, 2, 1, 2, 1, 0]  # จาก Gemini
+grok =   [2, 1, 0, 1, 0, 1, 2, 0, 2, 0, 0, 2, 0, 1, 1, 1, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 2, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0, 2, 0, 0, 0, 1, 1, 0, 0, 0, 0]
+deepseek  = [2, 1, 0, 1, 0, 1, 2, 1, 2, 0, 0, 1, 0, 1, 1, 1, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 2, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 2, 1, 0, 0, 0, 1, 0, 1, 0, 0]
+
+
+#ร้อยเอ็ด
+
+0,GPT5
+1,Claude
+2,Gemini
+0,Grok
+1,DeepSeek
+				
+You are an expert in public health system readiness.
+
+Below is the standardized z-score profile (x1–x4) of one province.
+The actual province name is intentionally not provided to prevent bias.
+The class was assigned based on LLM consensus 
+(0 = Low readiness, 1 = Moderate readiness, 2 = High readiness).
+
+Please provide a short technical explanation (3–5 sentences)
+describing why this province fits the assigned class.
+
+Focus on:
+- staff_z (capacity)
+- hospital_z (capacity)
+- equipment_z (capacity)
+- visits_z (demand; higher = worse)
+- overall supply–demand balance
+
+Write clearly as if presenting to policymakers. (ตอบเป็นภาษาไทย)
+
+Province Profile:
+- x1_staff_z = -0.541
+- x2_hospital_z = 2.621
+- x3_equipment_z = -0.472
+- x4_visits_z = -0.580
+
+Assigned class: 1
+
+
