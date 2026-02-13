@@ -14,3 +14,4 @@ zipfile36
 geoalchemy2
 matplotlib
 seaborn
+google-generativeai

@@ -2,263 +2,1113 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <title>Platform design — Hospital Adequacy</title>
+  <title>Disease-Adjusted Readiness Simulation</title>
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;800&display=swap" rel="stylesheet">
+  
   <style>
-    body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto; margin: 0; background:#fafafa;}
-    .container { max-width: 1200px; margin: 18px auto; padding: 0 12px; }
-    h1 { text-align:center; margin: 4px 0 16px; }
-    .grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 14px; }
-    .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); padding: 14px; }
-    .kpis { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-    .kpi { background:#fff; border-radius:10px; padding:12px; text-align:center; box-shadow: inset 0 0 0 1px #eee; }
-    .kpi .label { color:#666; font-size:14px; }
-    .kpi .value { font-size:24px; font-weight:700; margin-top:4px; }
-    #info-box { display:none; margin-top: 10px; }
-    .inputs { display:grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-    .group { border: 1px solid #eee; border-radius: 10px; padding: 10px; }
-    .group h4 { margin: 4px 0 10px; }
-    .row { display:grid; grid-template-columns: 1fr 90px; gap: 6px; margin-bottom: 6px; }
-    .row input { width: 100%; padding:6px 8px; border:1px solid #ddd; border-radius:8px; font-size:13px; text-align:right; }
-    .muted { color:#666; font-size: 13px; }
-    .actions { display:flex; gap:8px; margin-top: 8px; }
-    .btn { padding: 8px 12px; border-radius: 8px; border:none; cursor:pointer; }
-    .btn-primary { background:#007bff; color:#fff; }
-    .btn-outline { background:#fff; color:#333; border:1px solid #ddd; }
-    #map-wrap .title { display:flex; justify-content: space-between; align-items:center; margin-bottom:6px;}
-    #map-container { height: 500px; }
-    #bar-container { height: 380px; }
-  </style>
+    body { 
+        font-family: "Sarabun", sans-serif; 
+        margin: 0; 
+        /* พื้นหลังโทนเทาเงิน-ขาว สะอาดตา (ตามที่ชอบ) */
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        color: #333;
+        min-height: 100vh;
+    }
+    
+    .container { 
+        max-width: 95%; 
+        margin: 20px auto; 
+        padding: 0 10px;
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Toolbar Header */
+    .main-toolbar {
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center;
+        background: rgba(255, 255, 255, 0.9); 
+        padding: 16px 24px; 
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.6);
+        animation: slideDown 0.5s ease-out;
+    }
+
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* เปลี่ยนสีหัวข้อเป็นโทนฟ้าเข้มไล่ไปฟ้าสว่าง */
+    .app-title { 
+        font-size: 32px; 
+        font-weight: 800; 
+        background: linear-gradient(135deg, #0052D4 0%, #4364F7 50%, #6FB1FC 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0;
+        letter-spacing: -0.5px;
+        text-shadow: 0 2px 10px rgba(67, 100, 247, 0.2);
+    }
+    
+    .grid { 
+        display: grid; 
+        grid-template-columns: 2fr 1fr; 
+        gap: 20px;
+        animation: fadeIn 0.8s ease-out 0.2s backwards;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .card { 
+        background: white; 
+        border-radius: 16px; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
+        padding: 20px; 
+        height: fit-content;
+        border: 1px solid rgba(255,255,255,0.8);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+    }
+    
+    /* KPIs - เปลี่ยนพื้นหลังเป็นสีฟ้า */
+    .kpis { 
+        display:grid; 
+        grid-template-columns: 1fr 1fr; 
+        gap: 15px; 
+        margin-bottom: 15px;
+    }
+    .kpi { 
+        /* Blue Gradient */
+        background: linear-gradient(135deg, #4481eb 0%, #04befe 100%);
+        border-radius: 16px; 
+        padding: 20px; 
+        text-align: center; 
+        box-shadow: 0 8px 20px rgba(4, 190, 254, 0.3);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .kpi::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+        animation: rotate 20s linear infinite;
+    }
+
+    @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .kpi:hover {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 12px 30px rgba(4, 190, 254, 0.4);
+    }
+
+    .kpi .label { 
+        color: rgba(255,255,255,0.9); 
+        font-size: 16px; 
+        font-weight: 600;
+        position: relative;
+        z-index: 1;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .kpi .value { 
+        font-size: 48px; 
+        font-weight: 800; 
+        color: white;
+        position: relative;
+        z-index: 1;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        animation: countUp 0.6s ease-out;
+    }
+
+    @keyframes countUp {
+        from { transform: scale(0.5); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+    
+    /* Map Border สีฟ้าอ่อน */
+    #map-container { 
+        height: 550px; 
+        border-radius: 12px; 
+        overflow: hidden; 
+        border: 2px solid rgba(68, 129, 235, 0.15);
+        box-shadow: inset 0 2px 10px rgba(0,0,0,0.02);
+        transition: border-color 0.3s ease;
+    }
+
+    #map-container:hover {
+        border-color: rgba(68, 129, 235, 0.4);
+    }
+    
+    /* SIMULATION PANEL */
+    #info-box { 
+        display:none; 
+        margin-top: 25px; 
+        border-top: 4px solid #4481eb; /* ขอบบนสีฟ้า */
+        animation: slideInPanel 0.5s ease-out; 
+        padding-top: 20px;
+        position: relative;
+    }
+
+    @keyframes slideInPanel {
+        from { opacity: 0; transform: translateY(-20px); max-height: 0; }
+        to { opacity: 1; transform: translateY(0); max-height: 2000px; }
+    }
+
+    .close-panel-btn { 
+        position: absolute; top: 0; right: 0; cursor: pointer; color: #999; 
+        font-size: 28px; background: white; border: 2px solid #eee; 
+        padding: 4px 12px; border-radius: 50%; transition: all 0.3s ease;
+        width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+    }
+
+    .close-panel-btn:hover {
+        background: #ff4757; color: white; border-color: #ff4757; transform: rotate(90deg);
+    }
+    
+    .sim-header {
+        display: flex; justify-content: space-between; align-items: flex-end;
+        border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; margin-bottom: 15px; flex-wrap: wrap; gap: 15px;
+    }
+    .header-left { display: flex; flex-direction: column; }
+    .prov-title { font-size: 28px; font-weight: 800; color: #2c3e50; line-height: 1.1; }
+    .prov-subtitle { font-size: 14px; color: #7f8c8d; margin-top: 5px; font-weight: 500;}
+    
+    .header-right-group { display: flex; align-items: center; gap: 20px; }
+    
+    .header-controls { display: flex; gap: 12px; align-items: flex-end; background: #f8fbff; padding: 8px 15px; border-radius: 8px; border: 1px solid #e1e8f0;}
+    .header-control-item { display: flex; flex-direction: column; align-items: flex-start; }
+    .header-label { font-size: 12px; font-weight: 700; color: #555; margin-bottom: 4px; }
+    
+    /* Score Box - สีฟ้า */
+    .score-box { 
+        text-align: right; 
+        border-left: 4px solid #4481eb;
+        padding-left: 24px;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.8; }
+    }
+
+    .score-label { font-size: 12px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;}
+    .final-score { 
+        font-size: 48px; 
+        font-weight: 800; 
+        background: linear-gradient(135deg, #0052D4 0%, #4364F7 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1; 
+        letter-spacing: -2px;
+        text-shadow: 0 4px 10px rgba(67, 100, 247, 0.2);
+    }
+
+    /* Inputs Styling */
+    input[type="text"], input[type="number"] { 
+        text-align: right; width: 100%; padding: 8px 12px; 
+        border: 2px solid #e0e0e0; border-radius: 8px; 
+        font-size: 15px; font-weight: 600; color: #333;
+        box-sizing: border-box; transition: all 0.3s ease; background: white;
+    }
+    input:focus { 
+        border-color: #4481eb; /* Focus สีฟ้า */
+        outline: none; background: #fff; 
+        box-shadow: 0 0 0 4px rgba(68, 129, 235, 0.15);
+        transform: translateY(-1px);
+    }
+
+    input:hover { border-color: #b8c5f0; }
+
+    /* Alert Styles */
+    .group-alert { border: 2px solid #e74c3c !important; background-color: #fff5f5 !important; position: relative; }
+    .group-alert::after {
+        content: "⚠️ ต่ำกว่าเกณฑ์"; position: absolute; top: -10px; right: 10px;
+        background: #e74c3c; color: white; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: bold;
+    }
+    .input-alert { border-color: #e67e22 !important; background-color: #fffcf5 !important; color: #d35400; }
+    
+    .gap-alert { color: #e74c3c !important; font-weight: 900 !important; }
+    .gap-val { color: #555; font-weight: bold; transition: color 0.3s; }
+
+    /* Disease Panel */
+    .disease-panel {
+        background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+        border: 2px solid rgba(68, 129, 235, 0.1); 
+        border-radius: 16px;
+        padding: 20px; 
+        margin-bottom: 20px; 
+        display: flex; gap: 20px; flex-wrap: wrap; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        transition: transform 0.3s ease;
+    }
+
+    .disease-panel:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    }
+
+    .disease-item { 
+        display: flex; flex-direction: column; flex: 1; min-width: 160px;
+        animation: fadeInUp 0.5s ease-out backwards;
+    }
+    .disease-item:nth-child(1) { animation-delay: 0.1s; }
+    .disease-item:nth-child(2) { animation-delay: 0.2s; }
+    .disease-item:nth-child(3) { animation-delay: 0.3s; }
+
+    .disease-label { font-size: 13px; font-weight: 700; color: #444; margin-bottom: 5px; display:flex; justify-content:space-between; align-items: center;}
+    .gap-tag { font-size: 11px; color: #999; font-weight: normal; background: #f8f9fa; padding: 2px 6px; border-radius: 4px; border: 1px solid #eee;}
+
+    /* Features Grid */
+    .features-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+    .feature-group { 
+        border: 2px solid #e8ebf0; 
+        border-radius: 12px; 
+        padding: 16px; 
+        background: linear-gradient(to bottom, #ffffff 0%, #fafdff 100%);
+        height: 100%; box-sizing: border-box;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+
+    .feature-group:hover {
+        border-color: #4481eb; /* Hover ฟ้า */
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(68, 129, 235, 0.15);
+    }
+
+    .feature-head { 
+        display: flex; justify-content: space-between; align-items: center;
+        margin: 0 0 15px; padding-bottom: 10px; 
+        border-bottom: 3px solid #4481eb; /* ขีดล่างหัวข้อสีฟ้า */
+    }
+
+    .head-title { font-size: 13px; font-weight: 800; color: #2c3e50; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .total-badge {
+        background-color: #e0f2ff; color: #007bff;
+        font-size: 11px; font-weight: 600; padding: 2px 8px; 
+        border-radius: 12px; border: 1px solid #b3d7ff;
+        display: flex; gap: 4px; align-items: center;
+    }
+
+    .total-val { font-weight: 800; }
+    
+    .scrollable-inputs { max-height: 250px; overflow-y: auto; padding-right: 4px; }
+    .scrollable-inputs::-webkit-scrollbar { width: 6px; }
+    .scrollable-inputs::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 3px; }
+
+    .input-row { display: grid; grid-template-columns: 1fr 80px; gap: 8px; margin-bottom: 8px; align-items: center; }
+    .input-row span { font-size: 13px; color: #555; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    
+    .actions { text-align: right; margin-top: 10px; font-size: 12px; color: #999; font-style: italic;}
+    
+    /* Buttons */
+    .btn { 
+        cursor: pointer; padding: 10px 20px; border: none; border-radius: 12px; 
+        font-size: 14px; font-weight: 600; 
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        display: flex; align-items: center; gap: 8px;
+        position: relative; overflow: hidden;
+    }
+
+    .btn::before {
+        content: ''; position: absolute; top: 50%; left: 50%; width: 0; height: 0;
+        border-radius: 50%; background: rgba(255,255,255,0.3);
+        transform: translate(-50%, -50%); transition: width 0.5s, height 0.5s;
+    }
+    .btn:hover::before { width: 300px; height: 300px; }
+    .btn > * { position: relative; z-index: 1; }
+
+    .btn-outline { background: white; border: 2px solid #ddd; color: #555; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .btn-outline:hover { 
+        background: #f0f7ff; border-color: #4481eb; color: #4481eb; 
+        transform: translateY(-2px); box-shadow: 0 4px 12px rgba(68, 129, 235, 0.2);
+    }
+    
+    .btn-save { background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); color: white; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4); }
+    .btn-save:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(46, 204, 113, 0.5); }
+    
+    .btn-hist { background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4); }
+    .btn-hist:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(243, 156, 18, 0.5); }
+
+    /* ปุ่ม AI สีฟ้าสวยๆ */
+    .btn-ai { 
+        background: linear-gradient(135deg, #4481eb 0%, #04befe 100%);
+        color: white; box-shadow: 0 4px 15px rgba(68, 129, 235, 0.4);
+    }
+    .btn-ai:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(68, 129, 235, 0.5); }
+    .btn-ai:disabled { background: #b2bec3; cursor: not-allowed; box-shadow: none; transform: none; opacity: 0.6;}
+
+    /* Charts */
+    #charts-wrapper { display: flex; flex-direction: column; gap: 20px; }
+    .chart-box { height: 280px; }
+
+    /* AI Chatbot Panel */
+    #ai-panel { 
+        display: none; margin-top: 30px; 
+        background: linear-gradient(135deg, #ffffff 0%, #f4faff 100%);
+        border: 2px solid rgba(68, 129, 235, 0.2);
+        border-radius: 16px; padding: 20px; 
+        box-shadow: 0 10px 40px rgba(68, 129, 235, 0.15);
+        position: relative; animation: slideUpPanel 0.5s ease-out;
+    }
+
+    @keyframes slideUpPanel { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    .ai-header { 
+        display: flex; align-items: center; gap: 10px; margin-bottom: 15px; 
+        background: linear-gradient(135deg, #0052D4 0%, #4364F7 100%);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        font-weight: 700; font-size: 18px; border-bottom: 2px solid #4481eb; padding-bottom: 10px;
+    }
+
+    #ai-chat-log { 
+        height: 300px; overflow-y: auto; padding-right: 8px; 
+        font-size: 14px; line-height: 1.7; color: #2d3436; background: white;
+        border-radius: 12px; padding: 16px; border: 2px solid #eef1f6;
+        box-shadow: inset 0 2px 8px rgba(0,0,0,0.04);
+    }
+    #ai-chat-log::-webkit-scrollbar { width: 8px; }
+    #ai-chat-log::-webkit-scrollbar-track { background: #f1f3f5; border-radius: 4px; }
+    #ai-chat-log::-webkit-scrollbar-thumb { 
+        background: linear-gradient(135deg, #4481eb 0%, #04befe 100%);
+        border-radius: 4px; transition: background 0.3s;
+    }
+    #ai-chat-log::-webkit-scrollbar-thumb:hover { background: linear-gradient(135deg, #3066be 0%, #039dc6 100%); }
+    
+    .msg-bot { 
+        margin-bottom: 16px; background: linear-gradient(135deg, #f8f9fa 0%, #f1faff 100%);
+        padding: 16px; border-radius: 12px; border-left: 5px solid #4481eb;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06); animation: fadeInLeft 0.4s ease-out;
+    }
+
+    @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+
+    .msg-bot h1, .msg-bot h2, .msg-bot h3 { margin-top: 5px; margin-bottom: 5px; font-size: 15px; color: #0052D4; }
+    .msg-bot ul, .msg-bot ol { padding-left: 20px; margin-bottom: 5px; }
+    .msg-bot li { margin-bottom: 3px; }
+    .msg-bot strong { color: #2d3436; font-weight: 700; }
+
+    .msg-user { 
+        margin-bottom: 16px; 
+        background: linear-gradient(135deg, #4481eb 0%, #04befe 100%);
+        padding: 14px; border-radius: 12px; text-align: right; 
+        margin-left: 60px; color: white;
+        box-shadow: 0 4px 12px rgba(68, 129, 235, 0.3);
+        animation: fadeInRight 0.4s ease-out;
+    }
+
+    @keyframes fadeInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+    .ai-input-area { display: flex; gap: 5px; margin-top: 10px; }
+    .ai-input-area input { flex-grow: 1; text-align: left; }
+    .ai-close { position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 20px; color: #999; cursor: pointer; }
+    .ai-close:hover { color: #d63031; }
+    
+    .loader { 
+        border: 4px solid #f3f3f3; border-radius: 50%; 
+        border-top: 4px solid #4481eb;
+        width: 20px; height: 20px; animation: spin 0.8s linear infinite; display: none;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* History Modal */
+    #history-panel { 
+        display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        width: 500px; background: white; border-radius: 20px; 
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3); z-index: 1000; padding: 30px;
+        animation: modalZoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes modalZoomIn { from { transform: translate(-50%, -50%) scale(0.8); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+
+    #modal-overlay { 
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 999; animation: fadeIn 0.3s;
+    }
+
+    .history-item { 
+        padding: 16px; border-bottom: 1px solid #eee; display: flex; 
+        justify-content: space-between; align-items: center; transition: all 0.3s ease;
+        border-radius: 8px; margin-bottom: 4px;
+    }
+    .history-item:hover { 
+        background: linear-gradient(135deg, #e6f7ff 0%, #f0fbff 100%);
+        transform: translateX(5px); box-shadow: 0 2px 8px rgba(68, 129, 235, 0.1);
+    }
+    .history-info { cursor: pointer; flex-grow: 1;}
+    .history-del { color: #e74c3c; cursor: pointer; padding: 6px 10px; font-size: 14px; opacity: 0.6; transition: opacity 0.2s;}
+    .history-del:hover { opacity: 1; font-weight: bold; background: #fff0f0; border-radius: 4px;}
+
+    /* SEARCH BOX */
+    .search-wrapper { position: relative; width: 100%; max-width: 320px; }
+    .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #95a5a6; font-size: 16px; pointer-events: none; transition: color 0.3s; }
+
+    .search-input {
+        width: 100%; padding: 12px 18px 12px 50px !important;
+        border: 2px solid #e0e0e0; border-radius: 30px !important;
+        background-color: #f8f9fa; font-size: 14px; color: #2c3e50;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: inset 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    .search-wrapper:hover .search-input { background-color: #fff; border-color: #b8c5f0; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .search-input:focus {
+        background-color: #fff; border-color: #4481eb;
+        box-shadow: 0 6px 20px rgba(68, 129, 235, 0.25) !important;
+        outline: none; transform: translateY(-2px);
+    }
+    .search-input:focus + .search-icon { color: #4481eb; transform: translateY(-50%) scale(1.1); }
+</style>
 </head>
 <body>
   <div class="container">
-    <h1>Platform design</h1>
+    
+    <div class="main-toolbar">
+        <div class="app-title">Disease-Adjusted Readiness Simulation</div>
+        <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="prov-search" list="prov-list" class="search-input" placeholder="ค้นหาจังหวัด...">
+            <datalist id="prov-list"></datalist>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button id="save-btn" class="btn btn-save">💾 บันทึกการจำลอง</button>
+            <button id="history-btn" class="btn btn-hist">📂 ประวัติย้อนหลัง</button>
+            <button id="reset-btn" class="btn btn-outline">🔄 รีเซ็ตทั้งหมด</button>
+        </div>
+    </div>
+
     <div class="grid">
       <div class="card">
-        <div class="kpis">
-          <div class="kpi">
-            <div class="label">(จำนวนผู้สูงอายุทั้งหมด)</div>
-            <div class="value">{{ total_elderly }}</div>
+        <div id="map-container">{{ map_html|safe }}</div>
+
+        <div id="info-box">
+          <button class="close-panel-btn" onclick="closePanel()">&times;</button>
+          
+          <div class="sim-header">
+              <div class="header-left">
+                  <div class="prov-title" id="prov-title">ชื่อจังหวัด</div>
+                  <div class="prov-subtitle">Gen: <span id="val-rgen">0</span> | Penalty: <span id="val-penalty" style="color:red">0</span></div>
+              </div>
+              <div class="header-right-group">
+                  <div class="header-controls">
+                      <div class="header-control-item"><span class="header-label">ผู้สูงอายุ</span><input type="text" id="elderly_population" class="formatted-input" style="width: 110px;"></div>
+                      <div class="header-control-item"><span class="header-label">Alpha</span><input type="number" id="input-alpha" value="0.05" step="0.01" style="width: 80px; text-align:center;"></div>
+                  </div>
+                  <div><button id="ai-btn" class="btn btn-ai" disabled>✨ AI แนะนำ</button></div>
+                  <div class="score-box">
+                       <div class="score-label">คะแนนสุทธิ (R_final)</div>
+                       <div class="final-score" id="val-rfinal">0.0000</div>
+                  </div>
+              </div>
           </div>
-          <div class="kpi">
-            <div class="label">mean A_i</div>
-            <div class="value">{{ mean_Ai }}</div>
+
+          <div class="disease-panel">
+              <div class="disease-item"><div class="disease-label">🍬 เบาหวาน <span class="gap-tag">Gap: <span id="gap-dm" class="gap-val">0.00</span></span></div><input type="text" id="disease_dm" class="formatted-input" placeholder="จำนวนผู้ป่วย"></div>
+              <div class="disease-item"><div class="disease-label">❤️ หัวใจ <span class="gap-tag">Gap: <span id="gap-heart" class="gap-val">0.00</span></span></div><input type="text" id="disease_heart" class="formatted-input" placeholder="จำนวนผู้ป่วย"></div>
+              <div class="disease-item"><div class="disease-label">🩸 ความดัน <span class="gap-tag">Gap: <span id="gap-ht" class="gap-val">0.00</span></span></div><input type="text" id="disease_ht" class="formatted-input" placeholder="จำนวนผู้ป่วย"></div>
           </div>
-        </div>
-        <div id="map-wrap">
-          <div class="title">
-            <div class="muted">A</div>
-            <button id="reset-btn" class="btn btn-outline">🔄 Reset</button>
+
+          <div class="features-grid">
+                        <div class="feature-group" id="grp-x1">
+                <div class="feature-head">
+                    <span class="head-title">X1: บุคลากร (0.4)</span>
+                    <div class="total-badge">
+                        <span>รวม:</span>
+                        <span id="val-sum-x1" class="total-val">0</span>
+                    </div>
+                </div>
+                <div class="scrollable-inputs" id="container-x1"></div>
+            </div>
+            <div class="feature-group" id="grp-x2"><div class="feature-head">X2: บัตรทอง (0.3)</div><div class="input-row"><span title="สิทธิบัตรทอง (UC)">สิทธิบัตรทอง (UC)</span><input type="text" id="insurance_uc_scheme" class="formatted-input"></div></div>
+                        <div class="feature-group" id="grp-x3">
+                <div class="feature-head">
+                    <span class="head-title">X3: อุปกรณ์ (0.2)</span>
+                    <div class="total-badge">
+                        <span>รวม:</span>
+                        <span id="val-sum-x3" class="total-val">0</span>
+                    </div>
+                </div>
+                <div class="scrollable-inputs" id="container-x2"></div>
+            </div>
+            <div class="feature-group" id="grp-x4"><div class="feature-head">X4: ภาระงาน (0.1)</div><div class="input-row"><span title="ผู้ป่วยในเฉลี่ย (IPD)">ผู้ป่วยใน (IPD/วัน)</span><input type="text" id="ipd_avg_inpatients_per_day" class="formatted-input"></div></div>
           </div>
-          <div id="map-container">{{ map_html|safe }}</div>
+          <div class="actions">*พิมพ์ตัวเลขแล้วกด <b>Enter</b> เพื่อคำนวณใหม่</div>
         </div>
       </div>
+      
       <div class="card">
-        <div class="muted" style="margin-bottom:6px;">Ranking province A_i TOP 10</div>
-        <div id="bar-container">{{ bar_html|safe }}</div>
-      </div>
-    </div>
-    <div class="card" id="info-box">
-      <div class="muted">B</div>
-      <h3 id="prov-title" style="margin:6px 0 4px;"></h3>
-      <div id="prov-head" class="muted" style="margin-bottom:8px;"></div>
-      <div class="inputs">
-        <div class="group" id="grp-x1">
-          <h4>X_1 (บุคลากร)</h4>
-          <div class="row"><span>แพทย์</span><input id="doctors_physician" type="number"></div>
-          <div class="row"><span>ทันตแพทย์</span><input id="doctors_dentist" type="number"></div>
-          <div class="row"><span>เภสัช</span><input id="doctors_pharmacist" type="number"></div>
-          <div class="row"><span>พยาบาล</span><input id="doctors_registered_nurse" type="number"></div>
-          <div class="row"><span>แพทย์เฉพาะทาง</span><input id="doctors_specialist_total" type="number"></div>
-        </div>
-        <div class="group" id="grp-x2">
-          <h4>X_2 (อุปกรณ์)</h4>
-          <div class="row"><span>CT</span><input id="equip_ct_scanner" type="number"></div>
-          <div class="row"><span>MRI</span><input id="equip_mri" type="number"></div>
-          <div class="row"><span>Lithotripter</span><input id="equip_lithotripter" type="number"></div>
-          <div class="row"><span>Ultrasound</span><input id="equip_ultrasound" type="number"></div>
-          <div class="row"><span>Dialysis</span><input id="equip_dialysis_machine" type="number"></div>
-          <div class="row"><span>Ambulance</span><input id="equip_ambulance" type="number"></div>
-          <div class="row"><span>เตียง</span><input id="equip_bed_total" type="number"></div>
-        </div>
-        <div class="group" id="grp-x3">
-          <h4>X_3 (สิทธิ/เครือข่าย)</h4>
-          <div class="row"><span>UC Scheme</span><input id="insurance_uc_scheme" type="number" step="0.01"></div>
-          <div class="row"><span>จำนวน รพ.เครือข่าย</span><input id="insurance_hospital_count" type="number"></div>
-        </div>
-        <div class="group" id="grp-x4">
-          <h4>X_4 (โหลดบริการ)</h4>
-          <div class="row"><span>OPD avg/day</span><input id="opd_avg_outpatients_per_day" type="number" step="0.01"></div>
-          <div class="row"><span>IPD avg/day</span><input id="ipd_avg_inpatients_per_day" type="number" step="0.01"></div>
-        </div>
-      </div>
-      <div class="actions">
-        <span class="muted">แก้ตัวเลขแล้วกด <b>Enter</b> เพื่อคำนวณใหม่</span>
+         <div class="kpis">
+            <div class="kpi"><div class="label">ผู้สูงอายุรวม</div><div class="value" style="font-size:25px;">{{ total_elderly }}</div></div>
+            <div class="kpi"><div class="label">R_final เฉลี่ย</div><div class="value" style="font-size:25px;">{{ mean_R_final }}</div></div>
+         </div>
+         <div id="charts-wrapper">
+             <div><div style="font-size:13px; font-weight:bold; color:#555; margin-bottom:8px;"></div><div id="chart-best" class="chart-box">{{ bar_best_html|safe }}</div></div>
+             <div style="border-top:1px solid #eee; padding-top:15px;"><div style="font-size:13px; font-weight:bold; color:#555; margin-bottom:8px;"></div><div id="chart-worst" class="chart-box">{{ bar_worst_html|safe }}</div></div>
+         </div>
+         <div id="ai-panel">
+             <button class="ai-close" onclick="document.getElementById('ai-panel').style.display='none'">&times;</button>
+             <div class="ai-header">🤖 Gemini Assistant <div class="loader" id="ai-loading"></div></div>
+             <div id="ai-chat-log"></div>
+             <div class="ai-input-area">
+                 <input type="text" id="ai-user-msg" placeholder="ถามเพิ่มเติม..." onkeydown="if(event.key==='Enter') sendChat()">
+                 <button class="btn btn-ai" onclick="sendChat()" style="padding:6px 12px;">ส่ง</button>
+             </div>
+         </div>
       </div>
     </div>
   </div>
 
-  <script>
-    const boundaries = {{ boundaries|safe }};
+  <div id="history-panel">
+      <h3 style="margin-top:0; color:#333; display:flex; justify-content:space-between; align-items:center;">
+          📂 ประวัติการจำลอง <span style="font-size:13px; color:#999; font-weight:normal;">20 รายการล่าสุด</span>
+      </h3>
+      <div id="history-list" style="max-height:300px; overflow-y:auto; border:1px solid #eee; margin-bottom:15px; border-radius:4px;"></div>
+      <button onclick="document.getElementById('history-panel').style.display='none'; document.getElementById('modal-overlay').style.display='none'" class="btn btn-outline" style="width:100%; justify-content:center;">ปิดหน้าต่าง</button>
+  </div>
+  <div id="modal-overlay" onclick="document.getElementById('history-panel').style.display='none'; document.getElementById('modal-overlay').style.display='none'"></div>
+
+<script>
+    // --- 1. DATA FROM BACKEND ---
     const provinceData = {{ province_data|safe }};
-    const normMax = {{ norm_max|safe }};
-    const provinceOrder = {{ province_order|safe }};
+    const provinceOrder = {{ province_order|safe }}; // รายชื่อจังหวัดภาษาไทย
+    const boundaries = {{ boundaries|safe }};
+    const doctorCols = JSON.parse('{{ doctor_cols|safe }}');
+    const equipCols = JSON.parse('{{ equip_cols|safe }}');
+    const thaiMap = JSON.parse('{{ thai_map|safe }}');
 
     const infoBox = document.getElementById('info-box');
-    const provTitle = document.getElementById('prov-title');
-    const provHead = document.getElementById('prov-head');
-    const resetBtn = document.getElementById('reset-btn');
-
+    const containerX1 = document.getElementById('container-x1');
+    const containerX2 = document.getElementById('container-x2');
+    
+    // --- 2. MAPPING ---
+    const diseaseSupplyMap = {
+        'dm': [
+            'doctors_surgery_general', 'doctors_ophthalmology', 'doctors_ent', 
+            'doctors_family_medicine', 'doctors_public_health', 'doctors_dentist', 
+            'doctors_urology', 
+            'equip_ct_scanner', 'equip_mri', 'equip_ultrasound', 'equip_dialysis_machine'
+        ],
+        'heart': [
+            'doctors_thoracic_surgery', 'doctors_vascular_surgery', 
+            'doctors_cardiothoracic_anesthesia', 'doctors_rehabilitation', 
+            'doctors_diagnostic_radiology', 'doctors_advanced_imaging', 
+            'equip_ct_scanner', 'equip_mri', 'equip_ultrasound'
+        ],
+        'ht': [
+            'doctors_surgery_general', 'doctors_vascular_surgery', 
+            'doctors_family_medicine', 'doctors_public_health', 
+            'doctors_ophthalmology', 
+            'equip_ct_scanner', 'equip_mri', 'equip_ultrasound'
+        ]
+    };
+    
+    // Global Variables
     let lastSelected = null;
+    let globalStats = {};
+    let chatHistory = []; 
+    let provinceChats = {}; 
+    let lastHovered = null; 
 
-    function ready(fn) {
-      if (document.readyState !== 'loading') fn();
-      else document.addEventListener('DOMContentLoaded', fn);
+    // --- 3. HELPER FUNCTIONS ---
+    function formatVal(num) { return (num===undefined||num===null)?'':Number(num).toLocaleString('en-US',{maximumFractionDigits:2}); }
+    function parseVal(str) { return !str?0:parseFloat(String(str).replace(/,/g,''))||0; }
+    function getLabel(colName) { return thaiMap[colName] || colName.replace('doctors_','').replace('equip_','').replace(/_/g,' '); }
+
+    // --- 4. BUILD UI ---
+    function buildInputs() {
+        // Build Search List
+        const dl = document.getElementById('prov-list');
+        provinceOrder.forEach(p => {
+            const op = document.createElement('option');
+            op.value = p;
+            dl.appendChild(op);
+        });
+
+        // X1 Inputs
+        let htmlX1 = ''; 
+        doctorCols.forEach(col => { 
+            htmlX1 += `<div class="input-row"><span title="${getLabel(col)}">${getLabel(col)}</span><input type="text" id="${col}" class="formatted-input"></div>`; 
+        });
+        containerX1.innerHTML = htmlX1;
+        
+        // X3 Inputs
+        let htmlX3 = ''; 
+        equipCols.forEach(col => { 
+            htmlX3 += `<div class="input-row"><span title="${getLabel(col)}">${getLabel(col)}</span><input type="text" id="${col}" class="formatted-input"></div>`; 
+        });
+        containerX2.innerHTML = htmlX3;
+
+        // Input Events
+        document.querySelectorAll('.formatted-input').forEach(input => {
+            input.addEventListener('focus', function() { this.value = this.value.replace(/,/g, ''); });
+            input.addEventListener('blur', function() { 
+                const val = parseFloat(this.value); 
+                this.value = isNaN(val) ? '' : val.toLocaleString('en-US'); 
+            });
+            input.addEventListener('keydown', function(ev) { 
+                if(ev.key === 'Enter') { this.blur(); if(lastSelected) recalc(lastSelected, false); } 
+            });
+        });
+
+        const alphaInput = document.getElementById('input-alpha');
+        if (alphaInput) {
+            alphaInput.addEventListener('keydown', function(ev) {
+                if (ev.key === 'Enter') { this.blur(); if (lastSelected) recalc(lastSelected, false); }
+            });
+        }
+
+        // *** SEARCH EVENT LISTENER ***
+        const searchInput = document.getElementById('prov-search');
+        searchInput.addEventListener('input', function() { 
+            const val = this.value;
+            if (provinceOrder.includes(val)) {
+                selectProvince(val);
+                this.blur(); 
+            }
+        });
+    }
+    buildInputs();
+
+    // --- 5. CALCULATE STATS ---
+    function calculateGlobalStats() {
+        const stats = {};
+        const x1_vals=[], x2_vals=[], x3_vals=[], x4_vals=[], dm_vals=[], heart_vals=[], ht_vals=[]; 
+        const supply_vals={};
+
+        provinceOrder.forEach(p => {
+            const d = provinceData[p]; const elderly = d.elderly_population || 1;
+            let sumX1=0; doctorCols.forEach(c => sumX1 += (d[c]||0)); x1_vals.push(sumX1/elderly);
+            x2_vals.push(d.insurance_uc_scheme/elderly);
+            let sumX3=0; equipCols.forEach(c => sumX3 += (d[c]||0)); x3_vals.push(sumX3/elderly);
+            x4_vals.push(d.ipd_avg_inpatients_per_day/elderly);
+            dm_vals.push(d.disease_dm / elderly); heart_vals.push(d.disease_heart / elderly); ht_vals.push(d.disease_ht / elderly);
+            [...doctorCols, ...equipCols].forEach(col => { if(!supply_vals[col]) supply_vals[col] = []; supply_vals[col].push(d[col]); });
+        });
+
+        function getZDist(arr) { 
+            const n = arr.length; if (n <= 1) return { mean: arr[0] || 0, std: 1 };
+            const mean = arr.reduce((a,b)=>a+b,0) / n; 
+            const vari = arr.reduce((a,b)=>a + Math.pow(b-mean, 2), 0) / (n - 1); 
+            return { mean: mean, std: Math.sqrt(vari) || 1 }; 
+        }
+        function getMinMax(arr) { return { min: Math.min(...arr), max: Math.max(...arr) }; }
+
+        stats._X1 = getZDist(x1_vals); stats._X2 = getZDist(x2_vals); 
+        stats._X3 = getZDist(x3_vals); stats._X4 = getZDist(x4_vals);
+        stats.disease_dm = getMinMax(dm_vals); stats.disease_heart = getMinMax(heart_vals); stats.disease_ht = getMinMax(ht_vals);
+        Object.keys(supply_vals).forEach(col => { stats[col] = getMinMax(supply_vals[col]); });
+        return stats;
     }
 
+    function ready(fn) { if(document.readyState!=='loading') fn(); else document.addEventListener('DOMContentLoaded', fn); }
+
+    // --- 6. MAIN LOGIC ---
     ready(function init() {
+      globalStats = calculateGlobalStats();
       const mapDiv = document.querySelector('#map-container .js-plotly-plot');
-      const barDiv = document.querySelector('#bar-container .js-plotly-plot');
+      const chartBest = document.querySelector('#chart-best .js-plotly-plot');
+      const chartWorst = document.querySelector('#chart-worst .js-plotly-plot');
 
       function hookWhenReady() {
-        if (!mapDiv || !barDiv || !mapDiv.data) {
-          requestAnimationFrame(hookWhenReady);
-          return;
-        }
+        if (!mapDiv || !chartBest || !chartWorst || !mapDiv.data) { requestAnimationFrame(hookWhenReady); return; }
+        
+        for (let p in provinceData) provinceData[p]._orig = JSON.parse(JSON.stringify(provinceData[p]._orig || provinceData[p]));
+        const baseIdx = 0; const hiIdx = 1; 
+        
+        setTimeout(() => {
+            Plotly.Plots.resize(mapDiv); Plotly.Plots.resize(chartBest); Plotly.Plots.resize(chartWorst);
+            const opacities = provinceOrder.map(() => 0.8);
+            Plotly.restyle(mapDiv, { 'marker.opacity': [opacities] }, [baseIdx]);
+            updatePlots();
+        }, 200);
 
-        const baseIdx = mapDiv.data.findIndex(t => t.name === 'base');
-        const hiIdx = mapDiv.data.findIndex(t => t.name === 'highlight');
-
-        // Initialize map with full opacity
-        const opacities = provinceOrder.map(() => 1.0);
-        Plotly.restyle(mapDiv, { 'marker.opacity': [opacities] }, [baseIdx]);
-
-        // Hover: Highlight province boundary
+        // --- HOVER ---
         mapDiv.on('plotly_hover', function(data) {
-          const province = data.points[0].location;
-          const coords = boundaries[province];
-          if (!coords) return;
-
-          const lats = coords.map(c => c ? c[1] : null);
-          const lons = coords.map(c => c ? c[0] : null);
+          const province = data.points[0].location; 
+          if (province === lastHovered) return; 
+          lastHovered = province;
+          const coords = boundaries[province]; if (!coords) return;
+          const lats = coords.map(c => c ? c[1] : null); const lons = coords.map(c => c ? c[0] : null);
           Plotly.restyle(mapDiv, { lat: [lats], lon: [lons] }, [hiIdx]);
         });
+        mapDiv.on('plotly_unhover', function() { lastHovered = null; Plotly.restyle(mapDiv, { lat: [[]], lon: [[]] }, [hiIdx]); });
 
-        mapDiv.on('plotly_unhover', function() {
-          Plotly.restyle(mapDiv, { lat: [[]], lon: [[]] }, [hiIdx]);
-        });
-
-        // Click: Show province details and blur others
+        // --- MAP CLICK ---
         mapDiv.on('plotly_click', function(data) {
-          const province = data.points[0].location;
-          const info = provinceData[province];
-          if (!info) return;
-
-          if (lastSelected === province) {
-            resetAll(mapDiv, baseIdx, hiIdx);
-            return;
-          }
-          lastSelected = province;
-
-          provTitle.textContent = `จังหวัด ${province}`;
-          provHead.textContent = `A_i = ${(+info.A_i).toFixed(3)}  |  ผู้สูงอายุ = ${(+info.elderly_population).toLocaleString()} คน`;
-          infoBox.style.display = 'block';
-
-          Object.keys(info).forEach(k => {
-            const el = document.getElementById(k);
-            if (el) el.value = info[k];
-          });
-
-          const opacities = provinceOrder.map(p => (p === province ? 1.0 : 0.2));
-          Plotly.restyle(mapDiv, { 'marker.opacity': [opacities] }, [baseIdx]);
+            const province = data.points[0].location;
+            selectProvince(province);
         });
 
-        // Reset button
-        resetBtn.addEventListener('click', function() {
-          resetAll(mapDiv, baseIdx, hiIdx);
-        });
+        // *** CENTRAL SELECT FUNCTION ***
+        window.selectProvince = function(province) {
+            const info = provinceData[province]; 
+            if (!info) return;
+            
+            if (lastSelected === province) { closePanel(); return; }
+            lastSelected = province;
+            resetChatState(); 
 
-        // Enter key to recalculate A_i
-        document.addEventListener('keydown', function(ev) {
-          if (ev.key !== 'Enter' || !lastSelected) return;
+            document.getElementById('prov-search').value = province;
+            document.getElementById('prov-title').textContent = province;
+            infoBox.style.display = 'block';
+            document.getElementById('ai-btn').disabled = false;
 
-          function gv(id) {
-            const el = document.getElementById(id);
-            return el ? +el.value : 0;
-          }
-          const v = {
-            doctors_physician: gv('doctors_physician'),
-            doctors_dentist: gv('doctors_dentist'),
-            doctors_pharmacist: gv('doctors_pharmacist'),
-            doctors_registered_nurse: gv('doctors_registered_nurse'),
-            doctors_specialist_total: gv('doctors_specialist_total'),
-            equip_ct_scanner: gv('equip_ct_scanner'),
-            equip_mri: gv('equip_mri'),
-            equip_lithotripter: gv('equip_lithotripter'),
-            equip_ultrasound: gv('equip_ultrasound'),
-            equip_dialysis_machine: gv('equip_dialysis_machine'),
-            equip_ambulance: gv('equip_ambulance'),
-            equip_bed_total: gv('equip_bed_total'),
-            insurance_uc_scheme: gv('insurance_uc_scheme'),
-            insurance_hospital_count: gv('insurance_hospital_count'),
-            opd_avg_outpatients_per_day: gv('opd_avg_outpatients_per_day'),
-            ipd_avg_inpatients_per_day: gv('ipd_avg_inpatients_per_day'),
-            elderly_population: gv('elderly_population')
-          };
+            setVal('elderly_population', info.elderly_population);
+            setVal('insurance_uc_scheme', info.insurance_uc_scheme);
+            setVal('ipd_avg_inpatients_per_day', info.ipd_avg_inpatients_per_day);
+            setVal('disease_dm', info.disease_dm);
+            setVal('disease_heart', info.disease_heart);
+            setVal('disease_ht', info.disease_ht);
+            doctorCols.forEach(c => setVal(c, info[c]));
+            equipCols.forEach(c => setVal(c, info[c]));
 
-          const staff = v.doctors_physician + v.doctors_dentist + v.doctors_pharmacist +
-                        v.doctors_registered_nurse + v.doctors_specialist_total;
-          const equip = v.equip_ct_scanner + v.equip_mri + v.equip_lithotripter +
-                        v.equip_ultrasound + v.equip_dialysis_machine + v.equip_ambulance +
-                        v.equip_bed_total;
-          const ins = v.insurance_uc_scheme + v.insurance_hospital_count;
-          const svc = (v.opd_avg_outpatients_per_day + v.ipd_avg_inpatients_per_day) / 2.0;
+            recalc(info.province_name, true);
+            
+            const opacities = provinceOrder.map(p => (p === province ? 1.0 : 0.2));
+            Plotly.restyle(mapDiv, { 'marker.opacity': [opacities] }, [baseIdx]);
+            Plotly.restyle(mapDiv, { lat: [[]], lon: [[]] }, [hiIdx]);
 
-          const X1 = staff / (normMax.staff_max || 1);
-          const X2 = equip / (normMax.equip_max || 1);
-          const X3 = ins / (normMax.ins_max || 1);
-          const X4 = 1 - (svc / (normMax.svc_max || 1));
-          const Ai = 0.40 * X1 + 0.30 * X2 + 0.15 * X3 + 0.15 * X4;
+            // Restore Chat
+            const log = document.getElementById('ai-chat-log'); log.innerHTML = '';
+            if (provinceChats[province]) {
+                chatHistory = provinceChats[province];
+                chatHistory.forEach(msg => {
+                    const div = document.createElement('div');
+                    div.className = msg.role === 'user' ? 'msg-user' : 'msg-bot';
+                    div.innerHTML = msg.role === 'user' ? msg.content : marked.parse(msg.content);
+                    log.appendChild(div);
+                });
+            } else { chatHistory = []; }
+        };
 
-          provinceData[lastSelected].A_i = +Ai.toFixed(3);
-          provHead.textContent = `A_i = ${Ai.toFixed(3)}  |  ผู้สูงอายุ = ${(+v.elderly_population).toLocaleString()} คน`;
-
-          const zValues = provinceOrder.map(p => provinceData[p].A_i);
-          Plotly.update(mapDiv, { z: [zValues] }, {}, [baseIdx]);
-          updateBar(zValues);
-        });
-
-        function updateBar(zValues) {
-          const rows = provinceOrder.map((n, i) => ({ province_name_th: n, A_i: zValues[i] }))
-                                    .sort((a, b) => b.A_i - a.A_i).slice(0, 10).reverse();
-          Plotly.react(barDiv, [{
-            type: 'bar',
-            x: rows.map(r => r.A_i),
-            y: rows.map(r => r.province_name_th),
-            orientation: 'h'
-          }], {
-            margin: { r: 10, l: 150, t: 40, b: 10 },
-            height: 380,
-            xaxis: { range: [0, 1] },
-            yaxis: { automargin: true, tickfont: { size: 12 }, title: "" }
-          });
+        function setVal(id, v) { const el = document.getElementById(id); if(el) el.value = formatVal(v); }
+        
+        window.closePanel = function() {
+            infoBox.style.display = 'none';
+            lastSelected = null;
+            document.getElementById('prov-search').value = '';
+            resetChatState();
+            const opacities = provinceOrder.map(() => 0.8);
+            Plotly.restyle(mapDiv, { 'marker.opacity': [opacities] }, [baseIdx]);
+        };
+        
+        function resetChatState() {
+            chatHistory = [];
+            document.getElementById('ai-chat-log').innerHTML = '';
+            document.getElementById('ai-panel').style.display = 'none';
         }
 
-        function resetAll(mapDiv, baseIdx, hiIdx) {
-          const opacities = provinceOrder.map(() => 1.0);
-          Plotly.restyle(mapDiv, { 'marker.opacity': [opacities], lat: [[]], lon: [[]] }, [baseIdx, hiIdx]);
-          for (let p in provinceData) {
-            provinceData[p].A_i = provinceData[p].baseline_A_i;
-          }
-          const zValues = provinceOrder.map(p => provinceData[p].A_i);
-          Plotly.update(mapDiv, { z: [zValues] }, {}, [baseIdx]);
-          updateBar(zValues);
-          infoBox.style.display = 'none';
-          lastSelected = null;
+        // --- RECALCULATION ---
+        window.recalc = function(pName, isInit) {
+            const d = provinceData[pName];
+            if(!isInit) {
+                d.elderly_population = parseVal(document.getElementById('elderly_population').value) || 1;
+                d.insurance_uc_scheme = parseVal(document.getElementById('insurance_uc_scheme').value) || 0;
+                d.ipd_avg_inpatients_per_day = parseVal(document.getElementById('ipd_avg_inpatients_per_day').value) || 0;
+                d.disease_dm = parseVal(document.getElementById('disease_dm').value) || 0;
+                d.disease_heart = parseVal(document.getElementById('disease_heart').value) || 0;
+                d.disease_ht = parseVal(document.getElementById('disease_ht').value) || 0;
+                doctorCols.forEach(c => { const el = document.getElementById(c); if(el) d[c] = parseVal(el.value) || 0; });
+                equipCols.forEach(c => { const el = document.getElementById(c); if(el) d[c] = parseVal(el.value) || 0; });
+            }
+
+            let sumX1=0; doctorCols.forEach(c => sumX1+=d[c]);
+            let sumX3=0; equipCols.forEach(c => sumX3+=d[c]);
+            
+            document.getElementById('val-sum-x1').textContent = formatVal(sumX1);
+            document.getElementById('val-sum-x3').textContent = formatVal(sumX3);
+
+            const X1_cap = sumX1 / d.elderly_population;
+            const X2_cap = d.insurance_uc_scheme / d.elderly_population;
+            const X3_cap = sumX3 / d.elderly_population;
+            const X4_cap = d.ipd_avg_inpatients_per_day / d.elderly_population;
+
+            const z1 = (X1_cap - globalStats._X1.mean) / globalStats._X1.std;
+            const z2 = (X2_cap - globalStats._X2.mean) / globalStats._X2.std;
+            const z3 = (X3_cap - globalStats._X3.mean) / globalStats._X3.std;
+            const z4 = (globalStats._X4.mean - X4_cap) / globalStats._X4.std; 
+
+            const R_general = (0.4*z1) + (0.3*z2) + (0.2*z3) + (0.1*z4);
+            const alpha = parseFloat(document.getElementById('input-alpha').value) || 0.05; 
+
+            function norm(val, colKey) { 
+                const s = globalStats[colKey] || {min:0, max:1}; 
+                if(s.max === s.min) return 0; 
+                return (val - s.min)/(s.max - s.min); 
+            }
+
+            function getAvgSupply(diseaseKey) {
+                const cols = diseaseSupplyMap[diseaseKey];
+                if (!cols) return 0;
+                let sum = 0, count = 0;
+                cols.forEach(col => {
+                    if (d[col] !== undefined) { sum += norm(d[col], col); count++; }
+                });
+                return count > 0 ? sum / count : 0;
+            }
+
+            const dmBurden = norm(d.disease_dm / d.elderly_population, 'disease_dm');
+            const dmSup = getAvgSupply('dm');
+            const gapDM = Math.max(0, dmBurden - dmSup);
+
+            const hBurden = norm(d.disease_heart / d.elderly_population, 'disease_heart');
+            const hSup = getAvgSupply('heart');
+            const gapHeart = Math.max(0, hBurden - hSup);
+
+            const htBurden = norm(d.disease_ht / d.elderly_population, 'disease_ht');
+            const htSup = getAvgSupply('ht');
+            const gapHT = Math.max(0, htBurden - htSup);
+
+            const Penalty = alpha * (gapDM + gapHeart + gapHT);
+            const R_final = R_general - Penalty;
+            d.R_final = R_final;
+
+            // --- ANIMATION UPDATE START ---
+            animateValue("val-rfinal", parseVal(document.getElementById('val-rfinal').textContent), R_final, 800);
+            document.getElementById('val-rgen').textContent = R_general.toFixed(4);
+            
+            const penaltyElem = document.getElementById('val-penalty');
+            penaltyElem.textContent = Penalty.toFixed(4);
+            if(Penalty > 0) {
+                penaltyElem.style.transition = 'none';
+                penaltyElem.style.transform = 'scale(1.5)';
+                setTimeout(() => { 
+                    penaltyElem.style.transition = 'transform 0.3s';
+                    penaltyElem.style.transform = 'scale(1)'; 
+                }, 50);
+            }
+            // --- ANIMATION UPDATE END ---
+
+            document.getElementById('gap-dm').textContent = gapDM.toFixed(4);
+            document.getElementById('gap-heart').textContent = gapHeart.toFixed(4);
+            document.getElementById('gap-ht').textContent = gapHT.toFixed(4);
+
+            document.querySelectorAll('.group-alert, .input-alert, .gap-alert').forEach(el => el.classList.remove('group-alert', 'input-alert', 'gap-alert'));
+            if(z1 < -1.0) document.getElementById('grp-x1').classList.add('group-alert');
+            if(z2 < -1.0) document.getElementById('grp-x2').classList.add('group-alert');
+            if(z3 < -1.0) document.getElementById('grp-x3').classList.add('group-alert');
+            if(z4 < -1.0) document.getElementById('grp-x4').classList.add('group-alert');
+            
+            // const gapThreshold = 0.02 / (alpha || 0.05); 
+            const gapThreshold = 0.5; 
+            checkDiseaseAlert('dm', gapDM, gapThreshold); 
+            checkDiseaseAlert('heart', gapHeart, gapThreshold); 
+            checkDiseaseAlert('ht', gapHT, gapThreshold);
+
+            if(!isInit) updatePlots();
+        }
+
+        function checkDiseaseAlert(dKey, gapVal, thresh) {
+            if (gapVal > thresh) {
+                document.getElementById('gap-' + dKey).classList.add('gap-alert');
+                const cols = diseaseSupplyMap[dKey];
+                if(cols) cols.forEach(col => { 
+                    const inp = document.getElementById(col); 
+                    if(inp) inp.classList.add('input-alert'); 
+                });
+            }
+        }
+
+        // --- BUTTONS ---
+        document.getElementById('reset-btn').addEventListener('click', function() {
+            for (let p in provinceData) Object.assign(provinceData[p], JSON.parse(JSON.stringify(provinceData[p]._orig)));
+            closePanel();
+            document.getElementById('ai-btn').disabled = true;
+            provinceChats = {}; chatHistory = [];
+            updatePlots();
+        });
+
+        document.getElementById('save-btn').addEventListener('click', function() {
+            if (!lastSelected) { alert('กรุณาเลือกจังหวัดก่อนบันทึกครับ'); return; }
+            const currentData = {
+                province_name: lastSelected,
+                data: provinceData[lastSelected],
+                ai_response: JSON.stringify(chatHistory)
+            };
+            fetch('/save-sim/', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(currentData) })
+            .then(res => res.json()).then(res => { if(res.success) alert('✅ บันทึกข้อมูลเรียบร้อย!'); else alert('Error: ' + res.error); });
+        });
+
+        document.getElementById('history-btn').addEventListener('click', function() {
+            fetch('/get-history/').then(res => res.json()).then(res => {
+                const list = document.getElementById('history-list'); list.innerHTML = ''; 
+                if(res.history.length === 0) list.innerHTML = '<div style="padding:10px; color:#999;">ยังไม่มีประวัติ</div>';
+                res.history.forEach(item => {
+                    const div = document.createElement('div'); div.className = 'history-item';
+                    div.innerHTML = `<div class="history-info" onclick="loadHist(${item.id})"><b>${item.province}</b> <span style="font-size:12px; color:#888;">${item.time}</span></div><div class="history-del" onclick="delHist(${item.id})">🗑️</div>`;
+                    list.appendChild(div);
+                });
+                document.getElementById('history-panel').style.display = 'block'; document.getElementById('modal-overlay').style.display = 'block';
+                window._histData = res.history; 
+            });
+        });
+
+        window.loadHist = function(id) {
+            const item = window._histData.find(i => i.id === id);
+            if(!item) return;
+            const pName = item.province;
+            provinceData[pName] = item.full_data; 
+            selectProvince(pName);
+            infoBox.style.display = 'block';
+            lastSelected = pName;
+
+            const log = document.getElementById('ai-chat-log'); log.innerHTML = '';
+            if (item.ai_msg) {
+                try {
+                    const hist = JSON.parse(item.ai_msg);
+                    chatHistory = hist;
+                    provinceChats[pName] = hist; 
+                    hist.forEach(msg => {
+                        const div = document.createElement('div');
+                        div.className = msg.role === 'user' ? 'msg-user' : 'msg-bot';
+                        div.innerHTML = msg.role === 'user' ? msg.content : marked.parse(msg.content);
+                        log.appendChild(div);
+                    });
+                    document.getElementById('ai-panel').style.display = 'block';
+                } catch(e) { }
+                log.scrollTop = log.scrollHeight;
+            } else {
+                document.getElementById('ai-panel').style.display = 'none';
+            }
+            document.getElementById('history-panel').style.display = 'none'; document.getElementById('modal-overlay').style.display = 'none';
+            alert(`โหลดข้อมูลจำลองของ ${pName} เรียบร้อย!`);
+        };
+
+        window.delHist = function(id) {
+            if(!confirm('ยืนยันการลบ?')) return;
+            fetch('/delete-history/', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id: id}) })
+            .then(res => res.json()).then(res => { if(res.success) document.getElementById('history-btn').click(); });
+        };
+
+        function updatePlots() {
+            const zVals = provinceOrder.map(p => provinceData[p].R_final);
+            Plotly.update(mapDiv, { z: [zVals] }, {}, [0]);
+            const allRows = provinceOrder.map((n, i) => ({ name: n, val: zVals[i] })).sort((a,b) => b.val - a.val);
+            const top10 = allRows.slice(0, 10).reverse(); const bottom10 = allRows.slice(-10).reverse();
+            Plotly.react(chartBest, [{ type: 'bar', x: top10.map(r=>r.val), y: top10.map(r=>r.name), orientation: 'h', marker: { color: '#2ca02c' }, text: top10.map(r=>r.val.toFixed(2)), textposition: 'auto' }], chartBest.layout);
+            Plotly.react(chartWorst, [{ type: 'bar', x: bottom10.map(r=>r.val), y: bottom10.map(r=>r.name), orientation: 'h', marker: { color: '#d62728' }, text: bottom10.map(r=>r.val.toFixed(2)), textposition: 'auto' }], chartWorst.layout);
+        }
+
+        // --- AI LOGIC ---
+        document.getElementById('ai-btn').addEventListener('click', function() {
+            if (!lastSelected) return;
+            document.getElementById('ai-panel').style.display = 'block';
+            if(chatHistory.length === 0) { sendChat(true); }
+        });
+
+        window.sendChat = function(isInitial = false) {
+            const input = document.getElementById('ai-user-msg');
+            const userText = input.value.trim();
+            const log = document.getElementById('ai-chat-log');
+            const loader = document.getElementById('ai-loading');
+
+            if(!isInitial && !userText) return;
+
+            if(!isInitial) {
+                const uDiv = document.createElement('div'); uDiv.className = 'msg-user'; uDiv.textContent = userText;
+                log.appendChild(uDiv); chatHistory.push({role: 'user', content: userText});
+                provinceChats[lastSelected] = chatHistory;
+                input.value = ''; log.scrollTop = log.scrollHeight;
+            }
+
+            loader.style.display = 'inline-block';
+            const d = provinceData[lastSelected];
+            const payload = {
+                province_name: lastSelected,
+                R_final: document.getElementById('val-rfinal').textContent,
+                R_general: document.getElementById('val-rgen').textContent,
+                Penalty: document.getElementById('val-penalty').textContent,
+                elderly_population: d.elderly_population,
+                gap_dm: document.getElementById('gap-dm').textContent, gap_heart: document.getElementById('gap-heart').textContent, gap_ht: document.getElementById('gap-ht').textContent,
+                chat_history: chatHistory,
+                user_question: isInitial ? '' : userText
+            };
+
+            fetch('/analyze/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            .then(res => res.json())
+            .then(data => {
+                loader.style.display = 'none';
+                if (data.success) {
+                    const bDiv = document.createElement('div'); bDiv.className = 'msg-bot'; 
+                    bDiv.innerHTML = marked.parse(data.analysis); log.appendChild(bDiv);
+                    chatHistory.push({role: 'assistant', content: data.analysis});
+                    provinceChats[lastSelected] = chatHistory;
+                    log.scrollTop = log.scrollHeight;
+                } else { alert('AI Error: ' + data.error); }
+            })
+            .catch(err => { loader.style.display='none'; alert('Connection Error'); });
+        }
+    
+        // Animation Helper
+        function animateValue(id, start, end, duration) {
+            if (start === end) return;
+            const obj = document.getElementById(id);
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const currentVal = progress * (end - start) + start;
+                obj.textContent = currentVal.toFixed(4);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                } else {
+                    obj.textContent = end.toFixed(4);
+                }
+            };
+            window.requestAnimationFrame(step);
         }
       }
       hookWhenReady();
     });
-  </script>
+    // ฟังก์ชันสำหรับทำตัวเลขวิ่ง (Rolling Number)
+    function animateValue(id, start, end, duration) {
+        if (start === end) return;
+        const obj = document.getElementById(id);
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            // คำนวณค่าระหว่างทาง
+            const currentVal = progress * (end - start) + start;
+            obj.textContent = currentVal.toFixed(4);
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            } else {
+                obj.textContent = end.toFixed(4); // จบที่ค่าจริงเสมอป้องกันทศนิยมเพี้ยน
+            }
+        };
+        window.requestAnimationFrame(step);
+    }
+</script>
 </body>
 </html>
